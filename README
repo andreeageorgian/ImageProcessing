@@ -1,0 +1,43 @@
+	    				GEORGIAN ANDREEA -331CB
+------------------------------------------------------------------------------
+			TEMA 3 PRELUCRARI DE IMAGINI FOLOSIND RETELE MPI
+------------------------------------------------------------------------------
+	Pentru realizarea acestei teme, am pornit prin a initializa vectorul de
+vecini al fiecarui nod. In functie de rank-ul procesului se delimiteaza doua 
+cazuri:
+	- Daca rank-ul este 0, inseamna ca procesul curent este cel care initiaza 
+procesarea imaginilor. Acest proces este cel care citeste fisierul de imagini, 
+iar pentru fiecare linie din fisier identifica filtrele si imaginile pe care 
+acestea urmeaza sa fie aplicate. In functie de numarul de copii, procesul 0 
+imparte matricea initiala in portiuni egale, pe care le transmite fiecarui 
+copil. Pentru a face distinctia intre filtre, el va transmite toate 
+informatiile cu tag-uri diferite( am folosit tag-ul 1 pentru "sobel" si tag-ul 
+2 pentru "mean_removal"). In plus, se va transmite si latimea matricii initiale 
+care nu sufera modificari pe parcursul procesarii.
+	- Daca rank-ul este diferit de 0, receptionam de la nodul parinte dimensiunea 
+imaginii, limitele din matricea initiala ce ii vor incadra activitatea, precum 
+si portiunea de matrice propriu-zisa. De asemenea, trebuie sa verificam numarul 
+de copii:
+		+ Daca nodul nu este frunza, vom repeta procedeul de impartire a 
+		matricii din cazul procesului cu rank 0, propagand astfel informatia pana 
+		la cel mai jos nivel.
+		+ Daca nodul este frunza, atunci se va aplica filtrul peste portiunea 
+		de matrice primita.
+	Dupa ce matricea de pixeli a fost filtrata, ea trebuie retransmisa de la 
+frunze catre radacina si reconstruita pe parcursul trecerii prin nivelele 
+arborelui. Astfel, procesele care vor initia reunificarea matricii vor fi 
+frunzele, care vor trimite parintelui pe langa matricea propriu-zisa si limitele 
+care o incadreaza pe aceasta in matricea initiala. Fiecare nod intermediar 
+primeste aceste informatii de la copii, iar pe baza lor unifica bucatile primite, 
+iar nodul radacina este cel care va obtine matricea initiala filtrata integral, 
+pe care o va scrie in fisierul de output. 
+	Dupa incheierea acestui algoritm, procesul radacina va trimite catre toate 
+celelalte procese un tag de terminare(tag-ul 3), care le va anunta pe acestea ca 
+parintele asteapta informatii legate de numarul de linii procesate. Astfel, daca 
+nodul care primeste tag-ul 3 de la parinte este intermediar, distribuie informatia 
+mai departe, iar daca este frunza va intoarce numarul de linii procesate calculat 
+pe baza limitelor matricii primite la faza de trunchiere a matricii initiale. 
+Acest numar este retinut in cadrul unui vector cu o dimensiune egala cu numarul 
+de procese, structura pe care o actualizam la trecerea prin fiecare nod daca 
+este cazul. Nodul radacina va parcurge acest vector si va printa informatia in 
+fisierul de statistica primit ca parametru in linia de comanda.
